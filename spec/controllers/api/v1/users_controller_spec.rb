@@ -2,27 +2,25 @@ require 'rails_helper'
 RSpec.describe Api::V1::UsersController, type: :controller do
 
   let(:user) { FactoryGirl.create :user }
+  let(:user_response) { json_response }
 
   describe 'GET #show' do
     before(:each) do
       get :show, params: {id: user.id}, format: :json
     end
     it 'should return a user' do
-      user_response = json_response
       expect(user_response[:name]).to eq user.name
     end
   end
 
   describe 'POST #create' do
     context 'when is successfully created' do
-
       before(:each) do
         @create_hash = FactoryGirl.attributes_for :user
         post :create, params: @create_hash, format: :json
       end
 
       it 'should create a user' do
-        user_response = json_response
         expect(user_response[:email]).to eql @create_hash[:email]
       end
       it { should respond_with 201 }
@@ -35,21 +33,18 @@ RSpec.describe Api::V1::UsersController, type: :controller do
       end
 
       it 'renders an errors json' do
-        user_response = json_response
-        puts "user_response: #{user_response}"
         expect(user_response).to have_key(:errors)
       end
 
       it 'renders the json errors on why the user could not be created' do
-        user_response = json_response
         expect(user_response[:errors][:password]).to include "can't be blank"
       end
 
       it { should respond_with 422 }
     end
   end
-  describe 'PUT/PATCH #update' do
 
+  describe 'PUT/PATCH #update' do
     context 'when is successfully updated' do
       before(:each) do
         patch :update, params: {
@@ -61,7 +56,6 @@ RSpec.describe Api::V1::UsersController, type: :controller do
       end
 
       it 'renders the json representation for the updated user' do
-        user_response = json_response
         expect(user_response[:email]).to eql 'newmail@example.com'
       end
 
@@ -70,16 +64,16 @@ RSpec.describe Api::V1::UsersController, type: :controller do
 
     context 'when is not created' do
       before(:each) do
-        patch :update, params: { id: user.id, email: 'bademail.com' }, format: :json
+        patch :update,
+              params: { id: user.id, email: 'bademail.com' },
+              format: :json
       end
 
       it 'renders an errors json' do
-        user_response = json_response
         expect(user_response).to have_key(:errors)
       end
 
       it 'renders the json errors on whye the user could not be created' do
-        user_response = json_response
         expect(user_response[:errors][:email]).to include 'is invalid'
       end
 
@@ -93,6 +87,5 @@ RSpec.describe Api::V1::UsersController, type: :controller do
     end
 
     it { should respond_with 204 }
-
   end
 end

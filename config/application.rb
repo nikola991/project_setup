@@ -32,5 +32,6 @@ module ProjectSetup
 
     config.autoload_paths += %W[#{config.root}/app/services/utilities]
     config.autoload_paths += %W[#{config.root}/app/*]
+    config.autoload_paths << "#{Rails.root}/lib/doorkeeper"
   end
 end

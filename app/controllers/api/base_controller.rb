@@ -1,5 +1,7 @@
-class Api::V1::BaseController < ApplicationController
+class Api::BaseController < ApplicationController
   protect_from_forgery with: :null_session
+  before_action :doorkeeper_authorize! unless Rails.env.test?
+  before_action :set_current_user unless Rails.env.test?
   before_action :set_resource, only: [:destroy, :show, :update]
   respond_to :json
 
@@ -8,7 +10,7 @@ class Api::V1::BaseController < ApplicationController
     set_resource(resource_class.new(resource_params))
 
     if get_resource.save
-      render json: get_resource, status: :created
+      render_create
     else
       render json: { errors: get_resource.errors }, status: :unprocessable_entity
     end
@@ -39,7 +41,7 @@ class Api::V1::BaseController < ApplicationController
 # PATCH/PUT /api/{plural_resource_name}/1
   def update
     if get_resource.update(resource_params)
-      render json: get_resource, status: :ok
+      render_update
     else
       render json: { errors: get_resource.errors }, status: :unprocessable_entity
     end
@@ -92,5 +94,49 @@ class Api::V1::BaseController < ApplicationController
   def set_resource(resource = nil)
     resource ||= resource_class.find(params[:id])
     instance_variable_set("@#{resource_name}", resource)
+  end
+
+  def render_update
+    render json: resource_update_presenter.new(*update_presenter_args).to_json
+  end
+
+  def resource_update_presenter
+    resource_show_presenter
+  end
+
+  def update_presenter_args
+    show_presenter_args
+  end
+
+  def render_create
+    render json:
+             resource_create_presenter
+               .new(*create_presenter_args).to_json,
+           status: :created
+  end
+
+  def resource_create_presenter
+    resource_show_presenter
+  end
+
+  def resource_show_presenter
+    "#{presenter_module_name}::Show".classify.constantize
+  end
+
+  def presenter_module_name
+    "#{resource_name}_presenter"
+  end
+
+  def create_presenter_args
+    show_presenter_args
+  end
+
+  def show_presenter_args
+    [get_resource, get_resource]
+  end
+
+  def set_current_user
+    token = request.headers['Authorization'].split(' ').last
+    @current_user = User.find(Doorkeeper::AccessToken.find_by_token(token).resource_owner_id) if token
   end
 end

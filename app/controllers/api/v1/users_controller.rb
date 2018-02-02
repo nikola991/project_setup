@@ -28,6 +28,10 @@ module Api
           :password_confirmation
         )
       end
+
+      def query_params
+        params.permit(:status)
+      end
     end
   end
 end
